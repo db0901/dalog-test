@@ -1,19 +1,48 @@
 import { Box, Grid2, Typography } from "@mui/material";
-import { useTodos } from "../store/TodoContext";
+import { useTodoState } from "../store/TodoContext";
 import { TodoStatus } from "../types/todo";
+import LoadingSkeleton from "./LoadingSkeleton";
 import TodoItem from "./TodoItem";
 
 const columns: TodoStatus[] = ["Todo", "Doing", "Done"];
 
 function TodoList() {
-  const { todos, isLoading, error } = useTodos();
-
-  if (isLoading) {
-    return <Typography>Loading...</Typography>;
-  }
+  const { filteredTodos, isLoading, error } = useTodoState();
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight={400}
+        sx={{ bgcolor: "background.paper", borderRadius: 1, p: 3 }}
+      >
+        <Typography color="error" variant="h6" align="center">
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (filteredTodos.length === 0) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight={400}
+        sx={{ bgcolor: "background.paper", borderRadius: 1, p: 3 }}
+      >
+        <Typography variant="h6" color="text.secondary" align="center">
+          No todos yet! Click the "Add" button above to create your first todo.
+        </Typography>
+      </Box>
+    );
   }
 
   return (
@@ -23,7 +52,6 @@ function TodoList() {
           <Box
             sx={{
               bgcolor: "background.paper",
-              p: 2,
               borderRadius: 1,
               minHeight: 400,
             }}
@@ -31,7 +59,7 @@ function TodoList() {
             <Typography variant="h6" gutterBottom>
               {status}
             </Typography>
-            {todos
+            {filteredTodos
               .filter((todo) => todo.status === status)
               .map((todo) => (
                 <TodoItem key={todo.id} todo={todo} />

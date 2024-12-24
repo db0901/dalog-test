@@ -1,5 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import CreateTodo from "../components/CreateTodo";
+import ErrorSnackbar from "../components/ErrorSnackbar";
+import SearchBar from "../components/SearchBar";
 import TodoList from "../components/TodoList";
 
 function TodoLayout() {
@@ -9,7 +11,9 @@ function TodoLayout() {
         Todo Application
       </Typography>
       <CreateTodo />
+      <SearchBar />
       <TodoList />
+      <ErrorSnackbar />
     </Box>
   );
 }

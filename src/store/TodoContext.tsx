@@ -1,22 +1,38 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { todoService } from "../services/todoService";
 import { Todo, TodoStatus } from "../types/todo";
 
-interface TodoContextType {
+interface TodoState {
   todos: Todo[];
   isLoading: boolean;
   error: string | null;
-  addTodo: (title: string) => Promise<void>;
-  updateTodoStatus: (id: number, status: TodoStatus) => Promise<void>;
-  deleteTodo: (id: number) => Promise<void>;
+  searchTerm: string;
+  filteredTodos: Todo[];
 }
 
-const TodoContext = createContext<TodoContextType | undefined>(undefined);
+interface TodoActions {
+  addTodo: (title: string) => Promise<void>;
+  updateTodoStatus: (id: number, status: TodoStatus) => Promise<void>;
+  updateTodoTitle: (id: number, title: string) => Promise<void>;
+  deleteTodo: (id: number) => Promise<void>;
+  setSearchTerm: (term: string) => void;
+  clearError: () => void;
+}
+
+const TodoStateContext = createContext<TodoState | undefined>(undefined);
+const TodoActionsContext = createContext<TodoActions | undefined>(undefined);
 
 export function TodoProvider({ children }: { children: React.ReactNode }) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredTodos = useMemo(() => {
+    return todos.filter((todo) =>
+      todo.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [todos, searchTerm]);
 
   useEffect(() => {
     loadTodos();
@@ -24,8 +40,10 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
 
   const loadTodos = async () => {
     try {
+      setIsLoading(true);
       const data = await todoService.getAllTodos();
       setTodos(data);
+      setError(null);
     } catch (err) {
       setError("Failed to load todos");
     } finally {
@@ -58,6 +76,17 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateTodoTitle = async (id: number, title: string) => {
+    try {
+      const updatedTodo = await todoService.updateTodo(id, { title });
+      setTodos((prev) =>
+        prev.map((todo) => (todo.id === id ? updatedTodo : todo))
+      );
+    } catch (err) {
+      setError("Failed to update todo title");
+    }
+  };
+
   const deleteTodo = async (id: number) => {
     try {
       await todoService.deleteTodo(id);
@@ -67,26 +96,43 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearError = () => setError(null);
+
+  const actions = useMemo(
+    () => ({
+      addTodo,
+      updateTodoStatus,
+      updateTodoTitle,
+      deleteTodo,
+      setSearchTerm,
+      clearError,
+    }),
+    []
+  );
+
   return (
-    <TodoContext.Provider
-      value={{
-        todos,
-        isLoading,
-        error,
-        addTodo,
-        updateTodoStatus,
-        deleteTodo,
-      }}
+    <TodoStateContext.Provider
+      value={{ todos, isLoading, error, searchTerm, filteredTodos }}
     >
-      {children}
-    </TodoContext.Provider>
+      <TodoActionsContext.Provider value={actions}>
+        {children}
+      </TodoActionsContext.Provider>
+    </TodoStateContext.Provider>
   );
 }
 
-export const useTodos = () => {
-  const context = useContext(TodoContext);
+export const useTodoState = () => {
+  const context = useContext(TodoStateContext);
   if (!context) {
-    throw new Error("useTodos must be used within a TodoProvider");
+    throw new Error("useTodoState must be used within a TodoProvider");
+  }
+  return context;
+};
+
+export const useTodoActions = () => {
+  const context = useContext(TodoActionsContext);
+  if (!context) {
+    throw new Error("useTodoActions must be used within a TodoProvider");
   }
   return context;
 };

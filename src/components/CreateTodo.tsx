@@ -1,10 +1,10 @@
 import { Box, Button, TextField } from "@mui/material";
 import { useState } from "react";
-import { useTodos } from "../store/TodoContext";
+import { useTodoActions } from "../store/TodoContext";
 
 function CreateTodo() {
   const [title, setTitle] = useState("");
-  const { addTodo } = useTodos();
+  const { addTodo } = useTodoActions();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +24,9 @@ function CreateTodo() {
         fullWidth
         label="New Todo"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setTitle(e.target.value)
+        }
         variant="outlined"
         size="small"
       />
